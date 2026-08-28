@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>台股雙刀｜全市場掃描器 V4</title>
+<title>台股雙刀｜全市場掃描器 V5</title>
 <style>
-:root{--bg:#f3f5f8;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--red:#b91c1c;--green:#047857;--blue:#1d4ed8;--amber:#b45309}
+:root{--bg:#f3f5f8;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--red:#b91c1c;--green:#047857;--blue:#1d4ed8}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",Arial,sans-serif}
 header{padding:22px 16px 18px;background:#0f172a;color:#fff}header h1{margin:0 0 6px;font-size:24px}header p{margin:0;font-size:13px;color:#cbd5e1;line-height:1.55}
 main{max-width:1180px;margin:auto;padding:12px}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
@@ -15,13 +15,27 @@ select,input{font:inherit;border:1px solid #cbd5e1;border-radius:9px;padding:10p
 button{font:inherit;border:0;border-radius:10px;padding:11px 15px;background:#0f172a;color:#fff;font-weight:800;cursor:pointer}button.secondary{background:#e2e8f0;color:#0f172a}button:disabled{opacity:.5}
 .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.metric{background:#f8fafc;border-radius:10px;padding:11px}.metric b{display:block;font-size:21px}.metric span{font-size:11px;color:var(--muted)}
 .progress{height:10px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-top:10px}.bar{height:100%;width:0;background:#0f172a;transition:width .2s}.status{font-size:13px;line-height:1.55;color:#475569}
-.red{color:var(--red);font-weight:800}.green{color:var(--green);font-weight:800}.blue{color:var(--blue);font-weight:800}.amber{color:var(--amber);font-weight:800}
-.tablewrap{overflow:auto;max-height:65vh;border:1px solid var(--line);border-radius:10px}table{border-collapse:collapse;width:100%;min-width:1050px;font-size:12.5px}th,td{padding:9px;border-bottom:1px solid #edf2f7;text-align:right;white-space:nowrap}th{position:sticky;top:0;background:#f8fafc;z-index:2}th:first-child,td:first-child,th:nth-child(2),td:nth-child(2),th:nth-child(3),td:nth-child(3){text-align:left}.note{font-size:12px;color:#64748b;line-height:1.6}footer{max-width:1180px;margin:auto;padding:0 14px 30px;color:#64748b;font-size:11px}
-@media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}main{padding:9px}.card{padding:12px}.controls>*{flex:1}.field select,.field input{width:100%}.metric:last-child{grid-column:1/-1}}
+.blue{color:var(--blue);font-weight:800}.red{color:var(--red);font-weight:800}.green{color:var(--green);font-weight:800}
+.note{font-size:12px;color:#64748b;line-height:1.6}
+.pairs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pair{border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff}
+.pairHead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}
+.rank{font-size:12px;color:var(--muted)} .names{font-weight:900;font-size:16px;line-height:1.4}
+.sim{font-size:12px;color:var(--muted);white-space:nowrap}
+.ratios{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0}
+.box{background:#f8fafc;border-radius:10px;padding:10px}.box span{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}.box b{font-size:18px}
+.signal{border-radius:12px;padding:11px 12px;font-weight:900;font-size:15px;line-height:1.6}
+.signal.shortlong{background:#fff1f2;color:#9f1239}.signal.longshort{background:#ecfdf5;color:#065f46}
+.meta{margin-top:8px;font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+footer{max-width:1180px;margin:auto;padding:0 14px 30px;color:#64748b;font-size:11px}
+@media(max-width:700px){
+ .grid{grid-template-columns:repeat(2,1fr)}main{padding:9px}.card{padding:12px}.controls>*{flex:1}.field select,.field input{width:100%}.metric:last-child{grid-column:1/-1}
+ .pairs{grid-template-columns:1fr}.ratios{grid-template-columns:1fr 1fr 1fr}.box b{font-size:17px}.pair{padding:12px}
+}
 </style>
 </head>
 <body>
-<header><h1>台股雙刀｜全市場掃描器 V4</h1><p>資料由 GitHub Actions 在伺服器端更新，Safari 只讀本站資料，不再跨站下載 ZIP。歷史序列用來算相似度與均值；最新報價優先用於目前比值、偏離與 Z-Score。</p></header>
+<header><h1>台股雙刀｜全市場掃描器 V5</h1><p>直接顯示平均比值、當前比值與做多／放空方向。資料由 GitHub Actions 自動更新。</p></header>
 <main>
 <section class="card">
 <div class="controls">
@@ -31,22 +45,30 @@ button{font:inherit;border:0;border-radius:10px;padding:11px 15px;background:#0f
 <div class="field">顯示前 N 組<input id="topN" type="number" value="50" min="5" max="200"></div>
 <button id="run">載入資料並掃描</button><button id="export" class="secondary">匯出 CSV</button>
 </div>
-<div class="progress"><div id="bar" class="bar"></div></div><p id="status" class="status">準備就緒。V4 會讀取本站 <code>data/market.json</code>。</p>
+<div class="progress"><div id="bar" class="bar"></div></div><p id="status" class="status">準備就緒。</p>
 </section>
+
 <section class="card"><div class="grid">
-<div class="metric"><b id="stockCount">0</b><span>有效普通股</span></div><div class="metric"><b id="pairCount">0</b><span>符合條件配對</span></div><div class="metric"><b id="histDate">—</b><span>歷史資料至</span></div><div class="metric"><b id="quoteTime">—</b><span>最新報價時間</span></div><div class="metric"><b id="bestZ">—</b><span>最大 |Z|</span></div>
+<div class="metric"><b id="stockCount">0</b><span>有效普通股</span></div>
+<div class="metric"><b id="pairCount">0</b><span>符合條件配對</span></div>
+<div class="metric"><b id="histDate">—</b><span>歷史資料至</span></div>
+<div class="metric"><b id="quoteTime">—</b><span>最新報價時間</span></div>
+<div class="metric"><b id="bestZ">—</b><span>最大 |Z|</span></div>
 </div></section>
-<section class="card note"><strong>雙刀公式：</strong>相似度＝兩檔日報酬 Pearson 相關；比值＝分子÷分母；平均比值與標準差用回溯期歷史資料；目前比值優先採最新報價。偏離＝目前比值÷平均比值−1；Z＝(目前比值−平均比值)÷比值標準差。偏離正值＝「空分子／多分母」，負值＝「多分子／空分母」。</section>
-<section class="card"><div class="tablewrap"><table><thead><tr><th>#</th><th>分子</th><th>分母</th><th>相似度</th><th>目前比值</th><th>平均比值</th><th>偏離</th><th>Z</th><th>訊號</th><th>現價來源</th></tr></thead><tbody id="body"></tbody></table></div></section>
+
+<section class="card note"><strong>判讀：</strong>當前比值 ＞ 平均比值＝分子相對貴 → <span class="red">空分子／多分母</span>；當前比值 ＜ 平均比值＝分子相對便宜 → <span class="green">多分子／空分母</span>。</section>
+
+<section id="pairs" class="pairs"></section>
 </main>
-<footer>普通股篩選：4 碼且首碼非 0。資料更新工作由 GitHub Actions 執行；若官方端點暫時失敗，會保留可取得的歷史資料。本工具為研究用途，不構成投資建議。</footer>
+<footer>相似度＝兩檔日報酬 Pearson 相關；比值＝分子÷分母；平均比值與標準差採回溯期歷史資料。本工具為研究用途，不構成投資建議。</footer>
+
 <script>
 const $=id=>document.getElementById(id);let RESULTS=[];let CACHE=null;
 async function loadData(){
  if(CACHE)return CACHE;
  $("status").textContent="讀取本站行情資料…";$("bar").style.width="12%";
  const r=await fetch(`./data/market.json?v=${Date.now()}`,{cache:"no-store"});
- if(!r.ok)throw new Error(`找不到 data/market.json（HTTP ${r.status}）。請先讓 GitHub Actions 跑完一次。`);
+ if(!r.ok)throw new Error(`找不到 data/market.json（HTTP ${r.status}）`);
  const d=await r.json();
  if(!Array.isArray(d.dates)||!Array.isArray(d.stocks)||!d.stocks.length)throw new Error("market.json 格式不完整。");
  CACHE=d;return d;
@@ -55,8 +77,26 @@ function workerCode(){return `
 onmessage=e=>{const {stocks,dates,latest,look,minCorr,minDev,topN}=e.data;const end=dates.length;const start=Math.max(0,end-(look+12));const ss=stocks.map(s=>({code:s.code,name:s.name,p:s.prices.slice(start)})).filter(s=>s.p.filter(v=>v>0).length>=Math.max(15,look*.75));const res=[];let matched=0;
 for(let i=0;i<ss.length;i++){if(i%12===0)postMessage({type:'progress',v:i/Math.max(1,ss.length),i,total:ss.length});const A=ss[i].p;for(let j=i+1;j<ss.length;j++){const B=ss[j].p;let n=0,sx=0,sy=0,sxx=0,syy=0,sxy=0,rn=0,rs=0,rs2=0,lastHist=0;for(let k=1;k<A.length;k++){const a0=A[k-1],a1=A[k],b0=B[k-1],b1=B[k];if(a0>0&&a1>0&&b0>0&&b1>0){const x=a1/a0-1,y=b1/b0-1,r=a1/b1;n++;sx+=x;sy+=y;sxx+=x*x;syy+=y*y;sxy+=x*y;rn++;rs+=r;rs2+=r*r;lastHist=r}}if(n<Math.max(12,look*.7))continue;const cov=sxy-sx*sy/n,vx=sxx-sx*sx/n,vy=syy-sy*sy/n;if(vx<=0||vy<=0)continue;const c=cov/Math.sqrt(vx*vy);if(c<minCorr)continue;const mean=rs/rn,variance=Math.max(0,rs2/rn-mean*mean),sd=Math.sqrt(variance);if(!mean||!sd)continue;const qa=latest[ss[i].code],qb=latest[ss[j].code];const hasLive=qa>0&&qb>0;const cur=hasLive?qa/qb:lastHist;const dev=cur/mean-1;if(Math.abs(dev)<minDev)continue;const z=(cur-mean)/sd;matched++;res.push({a:ss[i].code,an:ss[i].name,b:ss[j].code,bn:ss[j].name,c,cur,mean,dev,z,src:hasLive?'最新報價':'歷史收盤'});}}
 res.sort((a,b)=>Math.abs(b.z)-Math.abs(a.z));postMessage({type:'done',stocks:ss.length,matched,results:res.slice(0,topN)});}`}
-function scan(d){return new Promise((resolve,reject)=>{const w=new Worker(URL.createObjectURL(new Blob([workerCode()],{type:'text/javascript'})));w.onmessage=e=>{if(e.data.type==='progress'){ $("status").textContent=`全市場配對計算中：${e.data.i}/${e.data.total} 檔`;$("bar").style.width=(15+e.data.v*85)+'%'}else{w.terminate();resolve(e.data)}};w.onerror=e=>{w.terminate();reject(new Error('配對運算失敗：'+e.message))};w.postMessage({stocks:d.stocks,dates:d.dates,latest:d.latest||{},look:+$("look").value,minCorr:+$("minCorr").value/100,minDev:+$("minDev").value/100,topN:+$("topN").value})})}
-function render(r,d){RESULTS=r.results;$("stockCount").textContent=r.stocks.toLocaleString();$("pairCount").textContent=r.matched.toLocaleString();$("histDate").textContent=d.history_asof||d.dates.at(-1)||'—';$("quoteTime").textContent=d.quote_asof||'—';$("bestZ").textContent=RESULTS.length?Math.abs(RESULTS[0].z).toFixed(2):'—';$("body").innerHTML=RESULTS.map((x,i)=>`<tr><td>${i+1}</td><td><b>${x.a}</b> ${x.an}</td><td><b>${x.b}</b> ${x.bn}</td><td>${(x.c*100).toFixed(1)}%</td><td>${x.cur.toFixed(4)}</td><td>${x.mean.toFixed(4)}</td><td class="${x.dev>0?'red':'green'}">${(x.dev*100).toFixed(1)}%</td><td>${x.z.toFixed(2)}</td><td class="${x.dev>0?'red':'green'}">${x.dev>0?'空分子／多分母':'多分子／空分母'}</td><td>${x.src}</td></tr>`).join('');$("bar").style.width='100%';$("status").innerHTML=`<span class="blue">掃描完成。</span> 共 ${r.stocks} 檔普通股、${r.matched.toLocaleString()} 組通過門檻，目前顯示 |Z| 最大前 ${RESULTS.length} 組。`}
-$("run").onclick=async()=>{$("run").disabled=true;$("body").innerHTML='';$("bar").style.width='2%';try{const d=await loadData();const r=await scan(d);render(r,d)}catch(e){$("status").innerHTML=`<span class="red">${e.message}</span>`;$("bar").style.width='0%'}finally{$("run").disabled=false}};
-$("export").onclick=()=>{if(!RESULTS.length)return alert('請先完成掃描。');let csv='排名,分子代號,分子名稱,分母代號,分母名稱,相似度,目前比值,平均比值,偏離,ZScore,訊號,現價來源\n';csv+=RESULTS.map((x,i)=>[i+1,x.a,x.an,x.b,x.bn,(x.c*100).toFixed(2),x.cur.toFixed(6),x.mean.toFixed(6),(x.dev*100).toFixed(2),x.z.toFixed(3),x.dev>0?'空分子/多分母':'多分子/空分母',x.src].map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));a.download='台股雙刀V4.csv';a.click()};
-</script></body></html>
+function scan(d){return new Promise((resolve,reject)=>{const w=new Worker(URL.createObjectURL(new Blob([workerCode()],{type:'text/javascript'})));w.onmessage=e=>{if(e.data.type==='progress'){$("status").textContent=`全市場配對計算中：${e.data.i}/${e.data.total} 檔`;$("bar").style.width=(15+e.data.v*85)+'%'}else{w.terminate();resolve(e.data)}};w.onerror=e=>{w.terminate();reject(new Error('配對運算失敗：'+e.message))};w.postMessage({stocks:d.stocks,dates:d.dates,latest:d.latest||{},look:+$("look").value,minCorr:+$("minCorr").value/100,minDev:+$("minDev").value/100,topN:+$("topN").value})})}
+function render(r,d){
+ RESULTS=r.results;$("stockCount").textContent=r.stocks.toLocaleString();$("pairCount").textContent=r.matched.toLocaleString();$("histDate").textContent=d.history_asof||d.dates.at(-1)||'—';$("quoteTime").textContent=d.quote_asof||'—';$("bestZ").textContent=RESULTS.length?Math.abs(RESULTS[0].z).toFixed(2):'—';
+ $("pairs").innerHTML=RESULTS.map((x,i)=>{
+   const shortFirst=x.dev>0;
+   const signal=shortFirst?`🔴 空 ${x.a} ${x.an}<br>🟢 多 ${x.b} ${x.bn}`:`🟢 多 ${x.a} ${x.an}<br>🔴 空 ${x.b} ${x.bn}`;
+   return `<article class="pair">
+     <div class="pairHead"><div><div class="rank">#${i+1}</div><div class="names">${x.a} ${x.an} ÷ ${x.b} ${x.bn}</div></div><div class="sim">相似度 ${(x.c*100).toFixed(1)}%</div></div>
+     <div class="ratios">
+       <div class="box"><span>平均比值</span><b>${x.mean.toFixed(4)}</b></div>
+       <div class="box"><span>當前比值</span><b>${x.cur.toFixed(4)} ${x.dev>0?'↑':'↓'}</b></div>
+       <div class="box"><span>偏離</span><b class="${x.dev>0?'red':'green'}">${x.dev>0?'+':''}${(x.dev*100).toFixed(1)}%</b></div>
+     </div>
+     <div class="signal ${shortFirst?'shortlong':'longshort'}">${signal}</div>
+     <div class="meta"><span>Z ${x.z.toFixed(2)}</span><span>${x.src}</span></div>
+   </article>`;
+ }).join('');
+ $("bar").style.width='100%';$("status").innerHTML=`<span class="blue">掃描完成。</span> 共 ${r.stocks} 檔普通股、${r.matched.toLocaleString()} 組通過門檻，目前顯示 ${RESULTS.length} 組。`;
+}
+$("run").onclick=async()=>{$("run").disabled=true;$("pairs").innerHTML='';$("bar").style.width='2%';try{const d=await loadData();const r=await scan(d);render(r,d)}catch(e){$("status").innerHTML=`<span class="red">${e.message}</span>`;$("bar").style.width='0%'}finally{$("run").disabled=false}};
+$("export").onclick=()=>{if(!RESULTS.length)return alert('請先完成掃描。');let csv='排名,分子代號,分子名稱,分母代號,分母名稱,相似度,當前比值,平均比值,偏離,ZScore,訊號,現價來源\\n';csv+=RESULTS.map((x,i)=>[i+1,x.a,x.an,x.b,x.bn,(x.c*100).toFixed(2),x.cur.toFixed(6),x.mean.toFixed(6),(x.dev*100).toFixed(2),x.z.toFixed(3),x.dev>0?`空${x.a}${x.an}/多${x.b}${x.bn}`:`多${x.a}${x.an}/空${x.b}${x.bn}`,x.src].map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\\ufeff'+csv],{type:'text/csv;charset=utf-8'}));a.download='台股雙刀V5.csv';a.click()};
+</script>
+</body></html>
