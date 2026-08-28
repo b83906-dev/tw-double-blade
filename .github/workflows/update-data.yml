@@ -23,114 +23,182 @@ jobs:
         shell: bash
         run: |
           cat > /tmp/update.py <<'PY'
-          import csv, io, json, math, re, zipfile
+          import csv, io, json, re, zipfile
           from datetime import datetime, timedelta, timezone
           from pathlib import Path
           import requests
 
           TZ=timezone(timedelta(hours=8))
-          S=requests.Session(); S.headers.update({'User-Agent':'Mozilla/5.0 TaiwanDoubleBlade/4.0'})
+          S=requests.Session()
+          S.headers.update({'User-Agent':'Mozilla/5.0 TaiwanDoubleBlade/5.1'})
           BASE='https://github.com/yukishirotsubasa/tw-stock-data-release/releases/download/daily-close-csv/'
           rows={}
 
-          def ordinary(c): return bool(re.fullmatch(r'[1-9][0-9]{3}',str(c).strip()))
-          def num(v):
-              if v is None:return None
-              s=str(v).replace(',','').replace('"','').strip()
-              if s in ('','--','---','-'):return None
-              try:return float(s)
-              except:return None
-          def add(date,code,name,price):
-              if not ordinary(code) or not price or price<=0:return
-              rows[(date,str(code).strip())]=(name.strip(),float(price))
+          def ordinary(c):
+              return bool(re.fullmatch(r'[1-9][0-9]{3}', str(c).strip()))
 
-          # 1) Weekly public archive: stable historical backbone.
-          today=datetime.now(TZ).date(); seen=set()
+          def num(v):
+              if v is None:
+                  return None
+              s=str(v).replace(',','').replace('"','').strip()
+              if s in ('','--','---','-'):
+                  return None
+              try:
+                  return float(s)
+              except:
+                  return None
+
+          def norm_date(v):
+              s=str(v).strip()
+              # Accept YYYYMMDD, YYYY-MM-DD, YYYY/MM/DD
+              digits=re.sub(r'[^0-9]','',s)
+              if len(digits)==8:
+                  try:
+                      d=datetime.strptime(digits,'%Y%m%d').date()
+                      return d.isoformat()
+                  except:
+                      return None
+              return None
+
+          def add(date,code,name,price):
+              d=norm_date(date)
+              if not d or not ordinary(code) or not price or price<=0:
+                  return
+              rows[(d,str(code).strip())]=(str(name or '').strip(),float(price))
+
+          # 1) Weekly archive: historical backbone.
+          today=datetime.now(TZ).date()
+          seen=set()
           for n in range(42):
-              d=today-timedelta(days=7*n); y,w,_=d.isocalendar(); fn=f'weekly_{y}_W{w:02d}.zip'
-              if fn in seen:continue
+              d=today-timedelta(days=7*n)
+              y,w,_=d.isocalendar()
+              fn=f'weekly_{y}_W{w:02d}.zip'
+              if fn in seen:
+                  continue
               seen.add(fn)
               try:
                   r=S.get(BASE+fn,timeout=25)
-                  if r.status_code!=200:continue
+                  if r.status_code!=200:
+                      continue
                   z=zipfile.ZipFile(io.BytesIO(r.content))
                   for member in z.namelist():
-                      if not member.lower().endswith('.csv'):continue
+                      if not member.lower().endswith('.csv'):
+                          continue
                       text=z.read(member).decode('utf-8-sig','ignore')
                       for x in csv.DictReader(io.StringIO(text)):
-                          add(str(x.get('date','')).strip(),x.get('code',''),x.get('name',''),num(x.get('close')))
-              except Exception as e: print('weekly skip',fn,e)
+                          add(x.get('date',''),x.get('code',''),x.get('name',''),num(x.get('close')))
+              except Exception as e:
+                  print('weekly skip',fn,e)
 
-          # Generic table parser for recent official daily reports.
           def extract_table(j):
               tables=[]
               if isinstance(j,dict):
-                  if isinstance(j.get('tables'),list):tables+=j['tables']
-                  if isinstance(j.get('data'),list) and isinstance(j.get('fields'),list):tables.append({'fields':j['fields'],'data':j['data']})
+                  if isinstance(j.get('tables'),list):
+                      tables+=j['tables']
+                  if isinstance(j.get('data'),list) and isinstance(j.get('fields'),list):
+                      tables.append({'fields':j['fields'],'data':j['data']})
               for t in tables:
-                  f=[str(x) for x in (t.get('fields') or [])]; data=t.get('data') or []
+                  f=[str(x) for x in (t.get('fields') or [])]
+                  data=t.get('data') or []
                   ci=next((i for i,x in enumerate(f) if '證券代號' in x or x in ('代號','股票代號')),None)
                   ni=next((i for i,x in enumerate(f) if '證券名稱' in x or x in ('名稱','股票名稱')),None)
                   pi=next((i for i,x in enumerate(f) if '收盤價' in x or x=='Close'),None)
-                  if ci is not None and pi is not None:return f,data,ci,ni,pi
+                  if ci is not None and pi is not None:
+                      return f,data,ci,ni,pi
               return None
 
-          # 2) Fill recent 18 calendar days from official TWSE / TPEx daily reports when available.
-          for back in range(18,-1,-1):
-              d=today-timedelta(days=back); ds=d.strftime('%Y%m%d'); iso=d.strftime('%Y/%m/%d')
-              # TWSE
+          # 2) Fill recent official daily data.
+          # Use 35 calendar days so the newest trading dates are not dependent on weekly archive timing.
+          for back in range(35,-1,-1):
+              d=today-timedelta(days=back)
+              ds=d.strftime('%Y%m%d')
+              iso=d.strftime('%Y/%m/%d')
+
               try:
                   u=f'https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?date={ds}&type=ALL&response=json'
-                  j=S.get(u,timeout=18).json(); t=extract_table(j)
+                  j=S.get(u,timeout=18).json()
+                  t=extract_table(j)
                   if t:
                       _,data,ci,ni,pi=t
                       for a in data:
-                          if len(a)>pi:add(d.isoformat(),a[ci],a[ni] if ni is not None else '',num(a[pi]))
-              except Exception as e: print('TWSE daily skip',d,e)
-              # TPEx new daily endpoint
+                          if len(a)>pi:
+                              add(d.isoformat(),a[ci],a[ni] if ni is not None else '',num(a[pi]))
+              except Exception as e:
+                  print('TWSE daily skip',d,e)
+
               try:
                   u=f'https://www.tpex.org.tw/www/zh-tw/afterTrading/dailyQuotes?date={iso}&id=&response=json'
-                  j=S.get(u,timeout=18).json(); t=extract_table(j)
+                  j=S.get(u,timeout=18).json()
+                  t=extract_table(j)
                   if t:
                       _,data,ci,ni,pi=t
                       for a in data:
-                          if len(a)>pi:add(d.isoformat(),a[ci],a[ni] if ni is not None else '',num(a[pi]))
-              except Exception as e: print('TPEx daily skip',d,e)
+                          if len(a)>pi:
+                              add(d.isoformat(),a[ci],a[ni] if ni is not None else '',num(a[pi]))
+              except Exception as e:
+                  print('TPEx daily skip',d,e)
 
-          # Build history matrix.
           dates=sorted({d for d,c in rows})
-          if len(dates)>150:dates=dates[-150:]
-          di={d:i for i,d in enumerate(dates)}; stocks={}
+          if len(dates)>150:
+              dates=dates[-150:]
+
+          di={d:i for i,d in enumerate(dates)}
+          stocks={}
           for (d,c),(name,p) in rows.items():
-              if d not in di:continue
+              if d not in di:
+                  continue
               s=stocks.setdefault(c,{'code':c,'name':name,'prices':[0.0]*len(dates)})
-              if name:s['name']=name
+              if name:
+                  s['name']=name
               s['prices'][di[d]]=p
+
           stocks=[s for s in stocks.values() if sum(1 for p in s['prices'] if p>0)>=20]
           stocks.sort(key=lambda x:x['code'])
 
-          # 3) Latest end-of-day snapshots. These override current ratio only; they do not fabricate a history date.
+          # 3) Latest end-of-day snapshot for current ratio.
           latest={}
           def parse_openapi(url):
               try:
                   a=S.get(url,timeout=20).json()
-                  if not isinstance(a,list):return
+                  if not isinstance(a,list):
+                      return
                   for x in a:
-                      if not isinstance(x,dict):continue
-                      code=x.get('Code') or x.get('SecuritiesCompanyCode') or x.get('SecuritiesCode') or x.get('股票代號') or x.get('證券代號')
+                      if not isinstance(x,dict):
+                          continue
+                      code=(x.get('Code') or x.get('SecuritiesCompanyCode') or
+                            x.get('SecuritiesCode') or x.get('股票代號') or x.get('證券代號'))
                       price=num(x.get('ClosingPrice') or x.get('Close') or x.get('收盤價'))
-                      if ordinary(code) and price and price>0:latest[str(code).strip()]=price
-              except Exception as e: print('snapshot skip',url,e)
+                      if ordinary(code) and price and price>0:
+                          latest[str(code).strip()]=price
+              except Exception as e:
+                  print('snapshot skip',url,e)
+
           parse_openapi('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL')
           parse_openapi('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes')
 
           now=datetime.now(TZ)
-          out={'version':4,'generated_at':now.isoformat(timespec='seconds'),'history_asof':dates[-1] if dates else None,'quote_asof':now.strftime('%Y-%m-%d %H:%M'),'dates':dates,'stocks':stocks,'latest':latest}
-          Path('data').mkdir(exist_ok=True);Path('data/market.json').write_text(json.dumps(out,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
+          out={
+              'version':5,
+              'generated_at':now.isoformat(timespec='seconds'),
+              'history_asof':dates[-1] if dates else None,
+              'quote_asof':now.strftime('%Y-%m-%d %H:%M'),
+              'dates':dates,
+              'stocks':stocks,
+              'latest':latest
+          }
+
+          Path('data').mkdir(exist_ok=True)
+          Path('data/market.json').write_text(
+              json.dumps(out,ensure_ascii=False,separators=(',',':')),
+              encoding='utf-8'
+          )
+
           print('dates',len(dates),'stocks',len(stocks),'latest',len(latest),'history_asof',out['history_asof'])
-          if len(stocks)<500:raise SystemExit('Too few stocks; refusing to publish broken dataset')
+          if len(stocks)<500:
+              raise SystemExit('Too few stocks; refusing to publish broken dataset')
           PY
           python /tmp/update.py
+
       - name: Commit updated data
         run: |
           git config user.name "github-actions[bot]"
