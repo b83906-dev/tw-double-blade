@@ -1,0 +1,30 @@
+name: Validate 10Y Double Blade
+on:
+  workflow_dispatch:
+    inputs:
+      max_stocks:
+        description: "0 = all market; 300 = smoke test"
+        required: true
+        default: "0"
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install numpy pandas requests
+      - name: Run baseline
+        run: python scripts/validate_10y.py --max-stocks "${{ inputs.max_stocks }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: validation-baseline
+          path: |
+            data/validation_baseline.json
+            data/validation_events.csv
+          retention-days: 30
