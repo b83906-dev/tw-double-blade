@@ -1,0 +1,32 @@
+name: Disposal A-B Analysis V2
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install numpy pandas requests
+      - name: Download latest walk-forward artifact
+        uses: dawidd6/action-download-artifact@v11
+        with:
+          workflow: validate-10y-walkforward.yml
+          workflow_conclusion: success
+          name: validation-walkforward
+          path: data
+      - name: Analyze TWSE + TPEx disposal effect
+        run: python scripts/analyze_disposal_ab_v2.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: disposal-ab-analysis-v2
+          path: |
+            data/disposal_ab_summary_v2.json
+            data/disposal_ab_events_v2.csv
+            data/disposal_history_v2.csv
+          retention-days: 30
