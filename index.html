@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>台股雙刀｜全市場掃描器 V10</title>
+<title>台股雙刀｜全市場掃描器 V10.1</title>
 <style>
 :root{--bg:#f3f5f8;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--red:#b91c1c;--green:#047857;--blue:#1d4ed8;--gold:#a16207}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",Arial,sans-serif}
@@ -21,14 +21,14 @@ button{font:inherit;border:0;border-radius:10px;padding:11px 15px;background:#0f
 .ratios{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}.box{background:#f8fafc;border-radius:10px;padding:10px}.box span{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}.box b{font-size:18px}
 .bt{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0}.bt .box{background:#fffdf5;border:1px solid #fef3c7}.bt b{font-size:16px}
 .signal{border-radius:12px;padding:11px 12px;font-weight:900;font-size:15px;line-height:1.6}.signal.shortlong{background:#fff1f2;color:#9f1239}.signal.longshort{background:#ecfdf5;color:#065f46}.signal.candidate{background:#fffbeb;color:#92400e}
-.badge{display:inline-block;border-radius:999px;padding:3px 7px;font-size:10px;font-weight:800}.badge.hit{background:#fee2e2;color:#991b1b}.badge.watch{background:#fef3c7;color:#92400e}.badge.q{background:#e0f2fe;color:#075985}
+.badge{display:inline-block;border-radius:999px;padding:3px 7px;font-size:10px;font-weight:800}.badge.hit{background:#fee2e2;color:#991b1b}.badge.watch{background:#fef3c7;color:#92400e}.badge.q{background:#e0f2fe;color:#075985}.badge.event{background:#ede9fe;color:#5b21b6}.badge.risk0{background:#dcfce7;color:#166534}.badge.risk1{background:#fef3c7;color:#92400e}.badge.risk2{background:#fee2e2;color:#991b1b}
 .meta{margin-top:8px;font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
 footer{max-width:1180px;margin:auto;padding:0 14px 30px;color:#64748b;font-size:11px}
 @media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}main{padding:9px}.card{padding:12px}.controls>*{flex:1}.field select,.field input{width:100%}.metric:nth-child(5),.metric:nth-child(6){grid-column:auto}.pairs{grid-template-columns:1fr}.ratios{grid-template-columns:repeat(2,1fr)}.bt{grid-template-columns:repeat(2,1fr)}.pair{padding:12px}}
 </style>
 </head>
 <body>
-<header><h1>台股雙刀｜全市場掃描器 V10</h1><p>品質評分版：即時雙刀訊號之外，加入歷史均值回歸勝率、平均回歸天數、逆向擴張幅度與樣本數，讓「有訊號」進一步變成「有品質的訊號」。</p></header>
+<header><h1>台股雙刀｜全市場掃描器 V10.1</h1><p>事件判讀版：保留 V10 核心配對與均值回歸邏輯，將 ±5% 定位為候選觸發線；極端偏離不再視為加分，並加入事件確認與 ±3%／±2%／完整均值三段回歸追蹤。</p></header>
 <main>
 <section class="card"><div class="controls">
 <div class="field">回溯<select id="look"><option value="20">20 日</option><option value="60" selected>60 日</option><option value="120">120 日</option></select></div>
@@ -49,12 +49,13 @@ footer{max-width:1180px;margin:auto;padding:0 14px 30px;color:#64748b;font-size:
 <div class="metric"><b id="bestQ">—</b><span>最高品質分</span></div>
 </div></section>
 
-<section class="card note"><strong>品質分：</strong>主要依歷史達門檻後是否在觀察期內回到當時均值、回歸速度、逆向繼續擴張幅度與樣本數加權。樣本過少會自動降權；這是策略品質篩選，不代表未來獲利保證。</section>
-<section class="card note"><strong>判讀：</strong>當前比值 ＞ 平均比值 → <span class="red">空分子／多分母</span>；當前比值 ＜ 平均比值 → <span class="green">多分子／空分母</span>。</section>
+<section class="card note"><strong>V10.1 核心：</strong>±5% 是「進入候選池」的觸發線，不是機械式進場點。偏離 5–6.5% 視為一般候選、6.5–8% 為高偏離、≥8% 為極端偏離警示；偏離越大不會自動獲得更高排名。</section>
+<section class="card note"><strong>事件確認：</strong>達門檻後仍要確認造成價差拉開的原因。處置／注意股、短線急漲跌、重大消息、財報、法說、除權息、ETF 調整等，先標記為「事件待確認」，暫不自行加權，留待實戰復盤校正。</section>
+<section class="card note"><strong>判讀：</strong>當前比值 ＞ 平均比值 → <span class="red">空分子／多分母</span>；當前比值 ＜ 平均比值 → <span class="green">多分子／空分母</span>。歷史追蹤同時觀察進入 ±3%、±2% 與完整回到均值。</section>
 <section class="card note"><strong>盤中行情：</strong><span id="liveState">尚未連接。</span><br><span id="liveMeta">盤中價格更新後會重算偏離、Z、達標狀態與排序；品質分使用歷史資料，不會被單一盤中跳動改寫。</span></section>
 <section id="pairs" class="pairs"></section>
 </main>
-<footer>歷史回測採「首次跨越偏離門檻」作為事件，避免連續多日重複計數；成功定義為觀察期內比值回到／穿越事件當下的歷史均值。研究用途，不構成投資建議。</footer>
+<footer>歷史回測採「首次跨越偏離門檻」作為事件，避免連續多日重複計數；V10.1 同時追蹤觀察期內進入 ±3%、±2% 與完整回到均值。事件確認目前只做實戰標記、不計入分數。研究用途，不構成投資建議。</footer>
 
 <script>
 const $=id=>document.getElementById(id);
@@ -67,28 +68,30 @@ async function loadData(){if(CACHE)return CACHE;$("status").textContent="讀取�
 function workerCode(){return `
 function bt(A,B,look,minDev,horizon){
  const rs=[];for(let k=0;k<A.length;k++)if(A[k]>0&&B[k]>0)rs.push(A[k]/B[k]);
- let trades=0,wins=0,sumDays=0,sumMae=0,maxMae=0,i=look,armed=true;
+ let trades=0,wins=0,wins2=0,wins3=0,sumDays=0,sumMae=0,maxMae=0,i=look,armed=true;
  while(i<rs.length){
   const hist=rs.slice(i-look,i),mean=hist.reduce((a,b)=>a+b,0)/hist.length,cur=rs[i],dev=cur/mean-1,sgn=Math.sign(dev);
   if(Math.abs(dev)<minDev){armed=true;i++;continue}
   if(!armed){i++;continue}
   armed=false;trades++;
-  let win=false,days=horizon,mae=0,end=Math.min(rs.length-1,i+horizon);
+  let win=false,hit2=false,hit3=false,days=horizon,mae=0,end=Math.min(rs.length-1,i+horizon);
   for(let j=i+1;j<=end;j++){
-   const d=rs[j]/mean-1;
+   const d=rs[j]/mean-1,ad=Math.abs(d);
+   if(!hit3&&ad<=.03){hit3=true;wins3++}
+   if(!hit2&&ad<=.02){hit2=true;wins2++}
    const adverse=sgn>0?Math.max(0,d-dev):Math.max(0,(-d)-(-dev)); if(adverse>mae)mae=adverse;
-   if((sgn>0&&rs[j]<=mean)||(sgn<0&&rs[j]>=mean)){win=true;days=j-i;end=j;break}
+   if((sgn>0&&rs[j]<=mean)||(sgn<0&&rs[j]>=mean)){win=true;days=j-i;break}
   }
   if(win){wins++;sumDays+=days}
   sumMae+=mae;if(mae>maxMae)maxMae=mae;
   i=end+1;
  }
- const winRate=trades?wins/trades:0,avgDays=wins?sumDays/wins:null,avgMae=trades?sumMae/trades:0;
+ const winRate=trades?wins/trades:0,winRate2=trades?wins2/trades:0,winRate3=trades?wins3/trades:0,avgDays=wins?sumDays/wins:null,avgMae=trades?sumMae/trades:0;
  const speed=avgDays==null?0:Math.max(0,1-avgDays/horizon);
  const risk=Math.max(0,1-Math.min(1,avgMae/Math.max(.0001,minDev*2)));
  const sample=Math.min(1,trades/5);
  const score=Math.round(100*(.60*winRate+.20*speed+.20*risk)*(.55+.45*sample));
- return {trades,wins,winRate,avgDays,avgMae,maxMae,score};
+ return {trades,wins,wins2,wins3,winRate,winRate2,winRate3,avgDays,avgMae,maxMae,score};
 }
 onmessage=e=>{
  const {stocks,latest,look,minCorr,minDev,horizon}=e.data;
@@ -114,22 +117,23 @@ onmessage=e=>{
 }`}
 
 function scan(d){return new Promise((resolve,reject)=>{const w=new Worker(URL.createObjectURL(new Blob([workerCode()],{type:"text/javascript"})));w.onmessage=e=>{if(e.data.type==="progress"){$("status").textContent=`全市場配對計算中：${e.data.i}/${e.data.total} 檔`;$("bar").style.width=(15+e.data.v*85)+"%"}else{w.terminate();resolve(e.data)}};w.onerror=e=>{w.terminate();reject(new Error("配對運算失敗："+e.message))};w.postMessage({stocks:d.stocks,latest:d.latest||{},look:+$("look").value,minCorr:+$("minCorr").value/100,minDev:+$("minDev").value/100,horizon:+$("horizon").value})})}
-function rebuild(quotes){const minDev=+$("minDev").value/100,topN=+$("topN").value;const arr=LIVE_BASE_PAIRS.map(x=>{const qa=quotes?.[x.a],qb=quotes?.[x.b],has=qa?.price>0&&qb?.price>0,cur=has?qa.price/qb.price:x.cur,dev=cur/x.mean-1,z=(cur-x.mean)/x.sd;return {...x,cur,dev,z,hit:Math.abs(dev)>=minDev,gap:Math.max(0,minDev-Math.abs(dev)),src:has?"盤中成交價":x.src,qtime:has?newestTime(qa.time,qb.time):""}});arr.sort((a,b)=>(b.hit-a.hit)||(b.bt.score-a.bt.score)||(a.hit?Math.abs(b.dev)-Math.abs(a.dev):(a.gap-b.gap))||Math.abs(b.z)-Math.abs(a.z));$("pairCount").textContent=arr.filter(x=>x.hit).length.toLocaleString();return arr.slice(0,topN)}
+function devRisk(dev,minDev){const a=Math.abs(dev);if(a<minDev)return {lv:-1,label:"未達門檻",cls:"watch"};if(a<.065)return {lv:0,label:"一般偏離",cls:"risk0"};if(a<.08)return {lv:1,label:"高偏離",cls:"risk1"};return {lv:2,label:"極端偏離",cls:"risk2"}}
+function rebuild(quotes){const minDev=+$("minDev").value/100,topN=+$("topN").value;const arr=LIVE_BASE_PAIRS.map(x=>{const qa=quotes?.[x.a],qb=quotes?.[x.b],has=qa?.price>0&&qb?.price>0,cur=has?qa.price/qb.price:x.cur,dev=cur/x.mean-1,z=(cur-x.mean)/x.sd,risk=devRisk(dev,minDev);return {...x,cur,dev,z,risk,hit:Math.abs(dev)>=minDev,gap:Math.max(0,minDev-Math.abs(dev)),src:has?"盤中成交價":x.src,qtime:has?newestTime(qa.time,qb.time):""}});arr.sort((a,b)=>(b.hit-a.hit)||(b.bt.score-a.bt.score)||(a.hit?(a.risk.lv-b.risk.lv):(a.gap-b.gap))||Math.abs(b.z)-Math.abs(a.z)||Math.abs(a.dev)-Math.abs(b.dev));$("pairCount").textContent=arr.filter(x=>x.hit).length.toLocaleString();return arr.slice(0,topN)}
 function qLabel(x){if(x.bt.trades<2)return "樣本少";if(x.bt.score>=75)return "優";if(x.bt.score>=60)return "佳";if(x.bt.score>=45)return "普通";return "弱"}
 function draw(results){
  RESULTS=results;$("bestZ").textContent=results.length?Math.max(...results.map(x=>Math.abs(x.z))).toFixed(2):"—";$("bestQ").textContent=results.length?Math.max(...results.map(x=>x.bt.score)):"—";
- $("pairs").innerHTML=results.map((x,i)=>{const sf=x.dev>0,signal=sf?`🔴 空 ${x.a} ${x.an}<br>🟢 多 ${x.b} ${x.bn}`:`🟢 多 ${x.a} ${x.an}<br>🔴 空 ${x.b} ${x.bn}`,badge=x.hit?`<span class="badge hit">已達門檻</span>`:`<span class="badge watch">候選｜差 ${(x.gap*100).toFixed(1)}%</span>`,avg=x.bt.avgDays==null?"—":x.bt.avgDays.toFixed(1)+"日";
- return `<article class="pair"><div class="pairHead"><div><div class="rank">#${i+1} ${badge} <span class="badge q">品質 ${x.bt.score}｜${qLabel(x)}</span></div><div class="names">${x.a} ${x.an} ÷ ${x.b} ${x.bn}</div></div><div class="sim">相似度 ${(x.c*100).toFixed(1)}%</div></div>
+ $("pairs").innerHTML=results.map((x,i)=>{const sf=x.dev>0,signal=sf?`🔴 空 ${x.a} ${x.an}<br>🟢 多 ${x.b} ${x.bn}`:`🟢 多 ${x.a} ${x.an}<br>🔴 空 ${x.b} ${x.bn}`,badge=x.hit?`<span class="badge hit">已達門檻</span>`:`<span class="badge watch">候選｜差 ${(x.gap*100).toFixed(1)}%</span>`,riskBadge=x.hit?`<span class="badge ${x.risk.cls}">${x.risk.label}</span>`:"",eventBadge=x.hit?`<span class="badge event">事件：待確認</span>`:"",avg=x.bt.avgDays==null?"—":x.bt.avgDays.toFixed(1)+"日";
+ return `<article class="pair"><div class="pairHead"><div><div class="rank">#${i+1} ${badge} ${riskBadge} ${eventBadge} <span class="badge q">品質 ${x.bt.score}｜${qLabel(x)}</span></div><div class="names">${x.a} ${x.an} ÷ ${x.b} ${x.bn}</div></div><div class="sim">相似度 ${(x.c*100).toFixed(1)}%</div></div>
  <div class="ratios"><div class="box"><span>平均比值</span><b>${x.mean.toFixed(4)}</b></div><div class="box"><span>當前比值</span><b>${x.cur.toFixed(4)} ${x.dev>0?"↑":"↓"}</b></div><div class="box"><span>偏離</span><b class="${x.dev>0?"red":"green"}">${x.dev>0?"+":""}${(x.dev*100).toFixed(1)}%</b></div><div class="box"><span>Z</span><b>${x.z.toFixed(2)}</b></div></div>
- <div class="bt"><div class="box"><span>歷史事件</span><b>${x.bt.trades} 次</b></div><div class="box"><span>回歸勝率</span><b>${x.bt.trades?(x.bt.winRate*100).toFixed(0)+"%":"—"}</b></div><div class="box"><span>平均回歸</span><b>${avg}</b></div><div class="box"><span>平均逆向擴張</span><b>${(x.bt.avgMae*100).toFixed(1)}%</b></div></div>
+ <div class="bt"><div class="box"><span>歷史事件</span><b>${x.bt.trades} 次</b></div><div class="box"><span>進入 ±3%</span><b>${x.bt.trades?(x.bt.winRate3*100).toFixed(0)+"%":"—"}</b></div><div class="box"><span>進入 ±2%</span><b>${x.bt.trades?(x.bt.winRate2*100).toFixed(0)+"%":"—"}</b></div><div class="box"><span>完整回均值</span><b>${x.bt.trades?(x.bt.winRate*100).toFixed(0)+"%":"—"}</b></div></div>
  <div class="signal ${x.hit?(sf?"shortlong":"longshort"):"candidate"}">${x.hit?signal:`接近門檻：${signal}`}</div>
- <div class="meta"><span>${x.src}</span><span>有效回溯 ${x.obs} 日</span>${x.qtime?`<span>${x.qtime}</span>`:""}<span>最大逆向擴張 ${(x.bt.maxMae*100).toFixed(1)}%</span></div></article>`}).join("")
+ <div class="meta"><span>${x.src}</span><span>有效回溯 ${x.obs} 日</span>${x.qtime?`<span>${x.qtime}</span>`:""}<span>平均逆向擴張 ${(x.bt.avgMae*100).toFixed(1)}%</span><span>最大逆向擴張 ${(x.bt.maxMae*100).toFixed(1)}%</span>${x.hit?`<span>事件判讀尚未計入分數</span>`:""}</div></article>`}).join("")
 }
 async function fetchLive(codes){const r=await fetch(LIVE_PROXY_URL+"/quotes",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({codes})});if(!r.ok)throw new Error("行情轉接器 HTTP "+r.status);return r.json()}
-async function liveTick(){if(!LIVE_POOL.length)return;try{const q=await fetchLive(LIVE_POOL),quotes=q.quotes||{},results=rebuild(quotes);draw(results);const times=Object.values(quotes).map(x=>x?.time).filter(Boolean),stamp=newestTime(...times)||normTime(q.asof)||new Date().toLocaleString("zh-TW",{timeZone:"Asia/Taipei",hour12:false});$("quoteTime").textContent=stamp;$("liveState").innerHTML=`<span class="green">盤中行情已更新。</span> ${Object.keys(quotes).length}/${LIVE_POOL.length} 檔取得成交價。`;$("liveMeta").textContent=`最近有效行情 ${stamp}；榜單已依「達標狀態 → 品質分 → 偏離/接近程度」重新排序。`}catch(e){$("liveState").innerHTML=`<span class="red">${e.message}</span>`}}
+async function liveTick(){if(!LIVE_POOL.length)return;try{const q=await fetchLive(LIVE_POOL),quotes=q.quotes||{},results=rebuild(quotes);draw(results);const times=Object.values(quotes).map(x=>x?.time).filter(Boolean),stamp=newestTime(...times)||normTime(q.asof)||new Date().toLocaleString("zh-TW",{timeZone:"Asia/Taipei",hour12:false});$("quoteTime").textContent=stamp;$("liveState").innerHTML=`<span class="green">盤中行情已更新。</span> ${Object.keys(quotes).length}/${LIVE_POOL.length} 檔取得成交價。`;$("liveMeta").textContent=`最近有效行情 ${stamp}；榜單已依「達標狀態 → 品質分 → 偏離風險 → Z」重新排序；極端偏離不再自動加分。`}catch(e){$("liveState").innerHTML=`<span class="red">${e.message}</span>`}}
 function startLive(){clearInterval(LIVE_TIMER);const sec=+$("liveSec").value;if(!sec)return $("liveState").textContent="盤中更新已關閉。";liveTick();LIVE_TIMER=setInterval(liveTick,sec*1000)}
 async function run(){$("run").disabled=true;$("pairs").innerHTML="";$("bar").style.width="2%";try{CACHE=null;const d=await loadData(),r=await scan(d);LIVE_BASE_PAIRS=r.basePairs;LIVE_POOL=[...new Set(LIVE_BASE_PAIRS.flatMap(x=>[x.a,x.b]))];$("stockCount").textContent=r.stocks.toLocaleString();$("histDate").textContent=d.history_asof||d.dates?.at(-1)||"—";$("quoteTime").textContent="等待盤中行情";draw(rebuild(null));$("bar").style.width="100%";$("status").innerHTML=`<span class="blue">歷史掃描完成。</span> ${r.stocks} 檔普通股、${LIVE_BASE_PAIRS.length} 組通過相似度門檻，品質回測完成，盤中追蹤 ${LIVE_POOL.length} 檔股票。`;startLive()}catch(e){$("status").innerHTML=`<span class="red">${e.message}</span>`;$("bar").style.width="0%"}finally{$("run").disabled=false}}
 $("run").onclick=run;$("liveSec").onchange=startLive;$("look").onchange=run;$("minCorr").onchange=run;$("minDev").onchange=run;$("horizon").onchange=run;
-$("export").onclick=()=>{if(!RESULTS.length)return alert("請先完成掃描。");let csv="排名,分子代號,分子名稱,分母代號,分母名稱,相似度,當前比值,平均比值,偏離,ZScore,品質分,歷史事件,回歸勝率,平均回歸天數,平均逆向擴張,最大逆向擴張,訊號,行情時間\n";csv+=RESULTS.map((x,i)=>[i+1,x.a,x.an,x.b,x.bn,(x.c*100).toFixed(2),x.cur.toFixed(6),x.mean.toFixed(6),(x.dev*100).toFixed(2),x.z.toFixed(3),x.bt.score,x.bt.trades,(x.bt.winRate*100).toFixed(1),x.bt.avgDays==null?"":x.bt.avgDays.toFixed(1),(x.bt.avgMae*100).toFixed(2),(x.bt.maxMae*100).toFixed(2),x.dev>0?`空${x.a}/多${x.b}`:`多${x.a}/空${x.b}`,x.qtime].map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download="台股雙刀V10.csv";a.click()};
+$("export").onclick=()=>{if(!RESULTS.length)return alert("請先完成掃描。");let csv="排名,分子代號,分子名稱,分母代號,分母名稱,相似度,當前比值,平均比值,偏離,ZScore,偏離風險,事件確認,品質分,歷史事件,進入3%率,進入2%率,完整回均值率,平均回歸天數,平均逆向擴張,最大逆向擴張,訊號,行情時間\n";csv+=RESULTS.map((x,i)=>[i+1,x.a,x.an,x.b,x.bn,(x.c*100).toFixed(2),x.cur.toFixed(6),x.mean.toFixed(6),(x.dev*100).toFixed(2),x.z.toFixed(3),x.risk.label,x.hit?"待確認":"",x.bt.score,x.bt.trades,(x.bt.winRate3*100).toFixed(1),(x.bt.winRate2*100).toFixed(1),(x.bt.winRate*100).toFixed(1),x.bt.avgDays==null?"":x.bt.avgDays.toFixed(1),(x.bt.avgMae*100).toFixed(2),(x.bt.maxMae*100).toFixed(2),x.dev>0?`空${x.a}/多${x.b}`:`多${x.a}/空${x.b}`,x.qtime].map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download="台股雙刀V10.1.csv";a.click()};
 run();
 </script></body></html>
