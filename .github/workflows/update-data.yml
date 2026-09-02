@@ -30,41 +30,91 @@ jobs:
 
           TZ=timezone(timedelta(hours=8))
           S=requests.Session()
-          S.headers.update({'User-Agent':'Mozilla/5.0 TaiwanDoubleBlade/5.1'})
+          S.headers.update({'User-Agent':'Mozilla/5.0 TaiwanDoubleBlade/10.2.2'})
           BASE='https://github.com/yukishirotsubasa/tw-stock-data-release/releases/download/daily-close-csv/'
           rows={}
+
+          INDUSTRY_NAMES={
+              '01':'水泥工業','02':'食品工業','03':'塑膠工業','04':'紡織纖維','05':'電機機械',
+              '06':'電器電纜','07':'化學生技醫療','08':'玻璃陶瓷','09':'造紙工業','10':'鋼鐵工業',
+              '11':'橡膠工業','12':'汽車工業','13':'電子工業','14':'建材營造','15':'航運業',
+              '16':'觀光餐旅','17':'金融保險業','18':'貿易百貨','19':'綜合企業','20':'其他',
+              '21':'化學工業','22':'生技醫療','23':'油電燃氣業','24':'半導體業',
+              '25':'電腦及週邊設備業','26':'光電業','27':'通信網路業','28':'電子零組件業',
+              '29':'電子通路業','30':'資訊服務業','31':'其他電子業','32':'文化創意業',
+              '33':'農業科技','34':'電子商務','35':'綠能環保','36':'數位雲端',
+              '37':'運動休閒','38':'居家生活','80':'管理股票'
+          }
 
           def ordinary(c):
               return bool(re.fullmatch(r'[1-9][0-9]{3}', str(c).strip()))
 
           def num(v):
-              if v is None:
-                  return None
+              if v is None: return None
               s=str(v).replace(',','').replace('"','').strip()
-              if s in ('','--','---','-'):
-                  return None
-              try:
-                  return float(s)
-              except:
-                  return None
+              if s in ('','--','---','-'): return None
+              try: return float(s)
+              except: return None
 
           def norm_date(v):
-              s=str(v).strip()
-              # Accept YYYYMMDD, YYYY-MM-DD, YYYY/MM/DD
-              digits=re.sub(r'[^0-9]','',s)
+              digits=re.sub(r'[^0-9]','',str(v).strip())
               if len(digits)==8:
-                  try:
-                      d=datetime.strptime(digits,'%Y%m%d').date()
-                      return d.isoformat()
-                  except:
-                      return None
+                  try: return datetime.strptime(digits,'%Y%m%d').date().isoformat()
+                  except: return None
               return None
 
           def add(date,code,name,price):
               d=norm_date(date)
-              if not d or not ordinary(code) or not price or price<=0:
-                  return
+              if not d or not ordinary(code) or not price or price<=0: return
               rows[(d,str(code).strip())]=(str(name or '').strip(),float(price))
+
+          def first(o, keys):
+              for k in keys:
+                  if isinstance(o,dict) and o.get(k) not in (None,''):
+                      return str(o.get(k)).strip()
+              return ''
+
+          def norm_industry(v):
+              x=str(v or '').strip()
+              if not x: return ''
+              digits=re.sub(r'[^0-9]','',x)
+              if digits:
+                  code=digits[-2:].zfill(2)
+                  return INDUSTRY_NAMES.get(code, code)
+              return x
+
+          def load_industry():
+              industry={}
+              urls=[
+                  'https://openapi.twse.com.tw/v1/opendata/t187ap03_L',
+                  'https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_O'
+              ]
+              for url in urls:
+                  try:
+                      r=S.get(url,timeout=30)
+                      r.raise_for_status()
+                      data=r.json()
+                      if not isinstance(data,list):
+                          print('industry unexpected payload',url,type(data))
+                          continue
+                      count=0
+                      for o in data:
+                          if not isinstance(o,dict): continue
+                          code=first(o,['公司代號','公司代碼','Code','SecuritiesCompanyCode','SecuritiesCode','StockCode','CompanyCode'])
+                          ind=first(o,['產業別','產業類別','Industry','IndustryCode','IndustryCodeName','SecuritiesIndustryCode'])
+                          if ordinary(code) and ind:
+                              industry[code]=norm_industry(ind)
+                              count+=1
+                      print('industry source',url,'rows',count)
+                  except Exception as e:
+                      print('industry source failed',url,e)
+              print('industry total',len(industry))
+              if len(industry)<500:
+                  raise SystemExit('Too few industry mappings; refusing to publish broken dataset')
+              return industry
+
+          # 0) Industry is fetched server-side by GitHub Actions, not by the browser.
+          industry=load_industry()
 
           # 1) Weekly archive: historical backbone.
           today=datetime.now(TZ).date()
@@ -73,17 +123,14 @@ jobs:
               d=today-timedelta(days=7*n)
               y,w,_=d.isocalendar()
               fn=f'weekly_{y}_W{w:02d}.zip'
-              if fn in seen:
-                  continue
+              if fn in seen: continue
               seen.add(fn)
               try:
                   r=S.get(BASE+fn,timeout=25)
-                  if r.status_code!=200:
-                      continue
+                  if r.status_code!=200: continue
                   z=zipfile.ZipFile(io.BytesIO(r.content))
                   for member in z.namelist():
-                      if not member.lower().endswith('.csv'):
-                          continue
+                      if not member.lower().endswith('.csv'): continue
                       text=z.read(member).decode('utf-8-sig','ignore')
                       for x in csv.DictReader(io.StringIO(text)):
                           add(x.get('date',''),x.get('code',''),x.get('name',''),num(x.get('close')))
@@ -93,8 +140,7 @@ jobs:
           def extract_table(j):
               tables=[]
               if isinstance(j,dict):
-                  if isinstance(j.get('tables'),list):
-                      tables+=j['tables']
+                  if isinstance(j.get('tables'),list): tables+=j['tables']
                   if isinstance(j.get('data'),list) and isinstance(j.get('fields'),list):
                       tables.append({'fields':j['fields'],'data':j['data']})
               for t in tables:
@@ -103,17 +149,14 @@ jobs:
                   ci=next((i for i,x in enumerate(f) if '證券代號' in x or x in ('代號','股票代號')),None)
                   ni=next((i for i,x in enumerate(f) if '證券名稱' in x or x in ('名稱','股票名稱')),None)
                   pi=next((i for i,x in enumerate(f) if '收盤價' in x or x=='Close'),None)
-                  if ci is not None and pi is not None:
-                      return f,data,ci,ni,pi
+                  if ci is not None and pi is not None: return f,data,ci,ni,pi
               return None
 
           # 2) Fill recent official daily data.
-          # Use 35 calendar days so the newest trading dates are not dependent on weekly archive timing.
           for back in range(35,-1,-1):
               d=today-timedelta(days=back)
               ds=d.strftime('%Y%m%d')
               iso=d.strftime('%Y/%m/%d')
-
               try:
                   u=f'https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?date={ds}&type=ALL&response=json'
                   j=S.get(u,timeout=18).json()
@@ -121,11 +164,9 @@ jobs:
                   if t:
                       _,data,ci,ni,pi=t
                       for a in data:
-                          if len(a)>pi:
-                              add(d.isoformat(),a[ci],a[ni] if ni is not None else '',num(a[pi]))
+                          if len(a)>pi: add(d.isoformat(),a[ci],a[ni] if ni is not None else '',num(a[pi]))
               except Exception as e:
                   print('TWSE daily skip',d,e)
-
               try:
                   u=f'https://www.tpex.org.tw/www/zh-tw/afterTrading/dailyQuotes?date={iso}&id=&response=json'
                   j=S.get(u,timeout=18).json()
@@ -133,26 +174,23 @@ jobs:
                   if t:
                       _,data,ci,ni,pi=t
                       for a in data:
-                          if len(a)>pi:
-                              add(d.isoformat(),a[ci],a[ni] if ni is not None else '',num(a[pi]))
+                          if len(a)>pi: add(d.isoformat(),a[ci],a[ni] if ni is not None else '',num(a[pi]))
               except Exception as e:
                   print('TPEx daily skip',d,e)
 
           dates=sorted({d for d,c in rows})
-          if len(dates)>150:
-              dates=dates[-150:]
-
+          if len(dates)>150: dates=dates[-150:]
           di={d:i for i,d in enumerate(dates)}
           stocks={}
           for (d,c),(name,p) in rows.items():
-              if d not in di:
-                  continue
-              s=stocks.setdefault(c,{'code':c,'name':name,'prices':[0.0]*len(dates)})
-              if name:
-                  s['name']=name
+              if d not in di: continue
+              s=stocks.setdefault(c,{'code':c,'name':name,'industry':industry.get(c,''),'prices':[0.0]*len(dates)})
+              if name: s['name']=name
+              if industry.get(c): s['industry']=industry[c]
               s['prices'][di[d]]=p
 
-          stocks=[s for s in stocks.values() if sum(1 for p in s['prices'] if p>0)>=20]
+          stocks=[s for s in stocks.values()
+                  if s.get('industry') and sum(1 for p in s['prices'] if p>0)>=20]
           stocks.sort(key=lambda x:x['code'])
 
           # 3) Latest end-of-day snapshot for current ratio.
@@ -160,11 +198,9 @@ jobs:
           def parse_openapi(url):
               try:
                   a=S.get(url,timeout=20).json()
-                  if not isinstance(a,list):
-                      return
+                  if not isinstance(a,list): return
                   for x in a:
-                      if not isinstance(x,dict):
-                          continue
+                      if not isinstance(x,dict): continue
                       code=(x.get('Code') or x.get('SecuritiesCompanyCode') or
                             x.get('SecuritiesCode') or x.get('股票代號') or x.get('證券代號'))
                       price=num(x.get('ClosingPrice') or x.get('Close') or x.get('收盤價'))
@@ -178,13 +214,14 @@ jobs:
 
           now=datetime.now(TZ)
           out={
-              'version':5,
+              'version':6,
               'generated_at':now.isoformat(timespec='seconds'),
               'history_asof':dates[-1] if dates else None,
               'quote_asof':now.strftime('%Y-%m-%d %H:%M'),
               'dates':dates,
               'stocks':stocks,
-              'latest':latest
+              'latest':latest,
+              'industry_count':len(industry)
           }
 
           Path('data').mkdir(exist_ok=True)
@@ -193,9 +230,10 @@ jobs:
               encoding='utf-8'
           )
 
-          print('dates',len(dates),'stocks',len(stocks),'latest',len(latest),'history_asof',out['history_asof'])
+          print('dates',len(dates),'stocks',len(stocks),'latest',len(latest),
+                'industries',len(industry),'history_asof',out['history_asof'])
           if len(stocks)<500:
-              raise SystemExit('Too few stocks; refusing to publish broken dataset')
+              raise SystemExit('Too few stocks with industry; refusing to publish broken dataset')
           PY
           python /tmp/update.py
 
@@ -204,5 +242,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/market.json
-          git diff --cached --quiet || git commit -m "Update Taiwan stock data"
+          git diff --cached --quiet || git commit -m "Update Taiwan stock data with industry"
           git push
